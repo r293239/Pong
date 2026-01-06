@@ -2,30 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Pong</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
         }
         
         body {
             background: #000;
             overflow: hidden;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            height: 100vh;
+            width: 100vw;
         }
         
         #gameContainer {
             position: relative;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
         }
         
         canvas {
             display: block;
             background: linear-gradient(to right, #0066cc 0%, #0066cc 50%, #cc0000 50%, #cc0000 100%);
+            touch-action: none;
         }
         
         .center-line {
@@ -33,20 +40,22 @@
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 4px;
+            width: 3px;
             height: 100%;
             background: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
         }
         
         .score {
             position: absolute;
-            top: 40px;
+            top: 30px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 40px;
+            font-size: 32px;
             font-weight: bold;
             color: white;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
         }
         
         .celebration {
@@ -54,11 +63,13 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 40px;
+            font-size: 32px;
             font-weight: bold;
             color: white;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-align: center;
             z-index: 100;
+            pointer-events: none;
         }
         
         .restart-btn {
@@ -66,47 +77,54 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            padding: 15px 30px;
-            background: rgba(255, 255, 255, 0.2);
+            padding: 20px 40px;
+            background: rgba(255, 255, 255, 0.9);
             border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 20px;
+            border-radius: 15px;
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
             cursor: pointer;
             z-index: 101;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            min-width: 200px;
         }
         
-        .restart-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+        .restart-btn:active {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%) scale(0.98);
         }
         
         .controls {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 400px;
-            background: rgba(0, 0, 0, 0.7);
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.8);
             padding: 15px;
-            border-radius: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.4);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
         
         .mode-selector, .difficulty-selector {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
             justify-content: center;
         }
         
         .mode-btn, .difficulty-btn {
-            padding: 8px 16px;
+            padding: 12px 24px;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
             color: white;
+            font-size: 16px;
             cursor: pointer;
-            transition: all 0.3s;
+            flex: 1;
+            max-width: 150px;
+            text-align: center;
         }
         
         .mode-btn.active, .difficulty-btn.active {
@@ -114,16 +132,64 @@
             border-color: white;
         }
         
-        .difficulty-btn:hover:not(.active), .mode-btn:hover:not(.active) {
+        .mode-btn:active:not(.active), .difficulty-btn:active:not(.active) {
             background: rgba(255, 255, 255, 0.2);
         }
         
         .controls-label {
             color: white;
             text-align: center;
+            font-size: 16px;
+            opacity: 0.9;
             margin-bottom: 5px;
-            font-size: 14px;
-            opacity: 0.8;
+        }
+        
+        /* On-screen touch controls */
+        .touch-controls {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        .touch-zone {
+            position: absolute;
+            height: 100%;
+            pointer-events: auto;
+        }
+        
+        .left-zone {
+            left: 0;
+            width: 50%;
+            background: rgba(0, 102, 204, 0.1);
+        }
+        
+        .right-zone {
+            right: 0;
+            width: 50%;
+            background: rgba(204, 0, 0, 0.1);
+        }
+        
+        .touch-indicator {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            pointer-events: none;
+        }
+        
+        .left-indicator {
+            left: 25%;
+            top: 50%;
+        }
+        
+        .right-indicator {
+            left: 75%;
+            top: 50%;
         }
         
         .instructions {
@@ -133,8 +199,110 @@
             transform: translateX(-50%);
             color: white;
             text-align: center;
-            font-size: 14px;
+            font-size: 16px;
             opacity: 0.7;
+            width: 90%;
+            pointer-events: none;
+        }
+        
+        .player-label {
+            position: absolute;
+            top: 20px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+        
+        .player-left {
+            left: 20px;
+            color: #0066cc;
+        }
+        
+        .player-right {
+            right: 20px;
+            color: #cc0000;
+        }
+        
+        /* Game mode indicator */
+        .game-mode {
+            position: absolute;
+            bottom: 220px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            pointer-events: none;
+        }
+        
+        /* Power-up indicator */
+        .power-up-indicator {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: gold;
+            font-size: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 16px;
+            border-radius: 10px;
+            display: none;
+            pointer-events: none;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-height: 700px) {
+            .score {
+                top: 20px;
+                font-size: 28px;
+            }
+            
+            .instructions {
+                top: 80px;
+                font-size: 14px;
+            }
+            
+            .controls {
+                padding: 10px;
+            }
+            
+            .mode-btn, .difficulty-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .score {
+                font-size: 28px;
+            }
+            
+            .celebration {
+                font-size: 28px;
+            }
+            
+            .restart-btn {
+                padding: 15px 30px;
+                font-size: 20px;
+                min-width: 180px;
+            }
+            
+            .mode-btn, .difficulty-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -142,41 +310,57 @@
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <div class="center-line"></div>
+        
         <div class="score" id="score">0 : 0</div>
+        <div class="player-label player-left">PLAYER 1</div>
+        <div class="player-label player-right">PLAYER 2</div>
+        
         <div class="celebration" id="celebration" style="display: none;"></div>
-        <button class="restart-btn" id="restartBtn" style="display: none;">Restart</button>
+        <button class="restart-btn" id="restartBtn" style="display: none;">RESTART</button>
         
         <div class="instructions">
-            Drag on your side to move paddle | First to 5 points wins!
+            Touch left side to move blue paddle<br>
+            Touch right side to move red paddle
+        </div>
+        
+        <div class="game-mode" id="gameModeText">VS AI</div>
+        <div class="power-up-indicator" id="powerUpIndicator">⭐ POWER UP! ⭐</div>
+        
+        <!-- Touch controls overlay -->
+        <div class="touch-controls">
+            <div class="touch-zone left-zone" id="leftZone"></div>
+            <div class="touch-zone right-zone" id="rightZone"></div>
+            <div class="touch-indicator left-indicator" id="leftIndicator"></div>
+            <div class="touch-indicator right-indicator" id="rightIndicator"></div>
         </div>
         
         <div class="controls">
-            <div class="controls-label">Game Mode</div>
+            <div class="controls-label">GAME MODE</div>
             <div class="mode-selector">
                 <button class="mode-btn active" data-mode="vsAI">VS AI</button>
-                <button class="mode-btn" data-mode="twoPlayer">2 Player</button>
+                <button class="mode-btn" data-mode="twoPlayer">2 PLAYERS</button>
             </div>
             
-            <div class="controls-label" id="difficultyLabel">Difficulty</div>
+            <div class="controls-label" id="difficultyLabel">DIFFICULTY</div>
             <div class="difficulty-selector">
-                <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
-                <button class="difficulty-btn" data-difficulty="medium">Medium</button>
-                <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+                <button class="difficulty-btn active" data-difficulty="easy">EASY</button>
+                <button class="difficulty-btn" data-difficulty="medium">MEDIUM</button>
+                <button class="difficulty-btn" data-difficulty="hard">HARD</button>
             </div>
         </div>
     </div>
 
     <script>
         // Game Constants
-        const PADDLE_WIDTH = 10;
-        const PADDLE_HEIGHT = 100;
-        const BALL_SIZE = 20;
-        const MAX_DY = 8;
+        const PADDLE_WIDTH = 8;
+        const PADDLE_HEIGHT = 80;
+        const BALL_SIZE = 16;
+        const MAX_DY = 6;
         const WINNING_SCORE = 5;
         const AI_SPEEDS = {
             easy: 2,
-            medium: 4,
-            hard: 6
+            medium: 3,
+            hard: 5
         };
         const PREDICTION_FACTORS = {
             easy: 0.1,
@@ -189,7 +373,7 @@
             playerY: 0,
             aiY: 0,
             ballPosition: { x: 0, y: 0 },
-            ballVelocity: { dx: 3, dy: 3 },
+            ballVelocity: { dx: 2.5, dy: 2.5 },
             playerScore: 0,
             aiScore: 0,
             showCelebration: false,
@@ -205,10 +389,11 @@
             lastHitterIsPlayer: true,
             canvas: null,
             ctx: null,
-            mouseY: 0,
             animationId: null,
             spawnTimer: null,
-            powerUpTimer: null
+            powerUpTimer: null,
+            powerUpActive: false,
+            touchStartPos: { left: null, right: null }
         };
 
         // DOM Elements
@@ -216,7 +401,12 @@
         const scoreElement = document.getElementById('score');
         const celebrationElement = document.getElementById('celebration');
         const restartBtn = document.getElementById('restartBtn');
-        const difficultyLabel = document.getElementById('difficultyLabel');
+        const gameModeText = document.getElementById('gameModeText');
+        const powerUpIndicator = document.getElementById('powerUpIndicator');
+        const leftZone = document.getElementById('leftZone');
+        const rightZone = document.getElementById('rightZone');
+        const leftIndicator = document.getElementById('leftIndicator');
+        const rightIndicator = document.getElementById('rightIndicator');
         
         // Initialize game
         function init() {
@@ -234,73 +424,172 @@
         }
 
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const maxWidth = Math.min(800, window.innerWidth);
+            const maxHeight = Math.min(window.innerHeight - 200, 500);
+            
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+            
+            // Center canvas
+            canvas.style.position = 'absolute';
+            canvas.style.left = '50%';
+            canvas.style.top = '50%';
+            canvas.style.transform = 'translate(-50%, -50%)';
+            
+            // Update touch zone positions
+            const canvasRect = canvas.getBoundingClientRect();
+            leftZone.style.height = canvasRect.height + 'px';
+            rightZone.style.height = canvasRect.height + 'px';
+            
+            leftIndicator.style.left = (canvasRect.left + canvasRect.width * 0.25) + 'px';
+            rightIndicator.style.left = (canvasRect.left + canvasRect.width * 0.75) + 'px';
+            
+            leftIndicator.style.top = (canvasRect.top + canvasRect.height / 2) + 'px';
+            rightIndicator.style.top = (canvasRect.top + canvasRect.height / 2) + 'px';
         }
 
         function setupEventListeners() {
-            // Mouse/Touch movement
-            canvas.addEventListener('mousemove', handleMouseMove);
-            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            // Prevent default touch behaviors
+            document.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+            document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+            
+            // Touch controls for left side
+            leftZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                gameState.touchStartPos.left = touch.clientY;
+                updateLeftIndicator(touch.clientY);
+                leftIndicator.style.display = 'block';
+            });
+            
+            leftZone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (gameState.touchStartPos.left !== null && e.touches[0]) {
+                    const touch = e.touches[0];
+                    const deltaY = touch.clientY - gameState.touchStartPos.left;
+                    
+                    // Convert screen Y to game Y
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const gameY = (touch.clientY - canvasRect.top - canvasRect.height / 2) * (canvas.height / canvasRect.height);
+                    
+                    gameState.playerY = gameY;
+                    gameState.touchStartPos.left = touch.clientY;
+                    updateLeftIndicator(touch.clientY);
+                }
+            });
+            
+            leftZone.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                gameState.touchStartPos.left = null;
+                leftIndicator.style.display = 'none';
+            });
+            
+            // Touch controls for right side
+            rightZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                if (gameState.gameMode === 'twoPlayer') {
+                    gameState.touchStartPos.right = touch.clientY;
+                    updateRightIndicator(touch.clientY);
+                    rightIndicator.style.display = 'block';
+                }
+            });
+            
+            rightZone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (gameState.gameMode === 'twoPlayer' && 
+                    gameState.touchStartPos.right !== null && 
+                    e.touches[0]) {
+                    const touch = e.touches[0];
+                    
+                    // Convert screen Y to game Y
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const gameY = (touch.clientY - canvasRect.top - canvasRect.height / 2) * (canvas.height / canvasRect.height);
+                    
+                    gameState.aiY = gameY;
+                    gameState.touchStartPos.right = touch.clientY;
+                    updateRightIndicator(touch.clientY);
+                }
+            });
+            
+            rightZone.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                gameState.touchStartPos.right = null;
+                rightIndicator.style.display = 'none';
+            });
+            
+            // Mouse controls for desktop testing
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const gameY = (e.clientY - rect.top - rect.height / 2) * (canvas.height / rect.height);
+                
+                if (e.clientX < rect.left + rect.width / 2) {
+                    gameState.playerY = gameY;
+                } else if (gameState.gameMode === 'twoPlayer') {
+                    gameState.aiY = gameY;
+                }
+            });
             
             // Window resize
             window.addEventListener('resize', resizeCanvas);
+            window.addEventListener('orientationchange', () => {
+                setTimeout(resizeCanvas, 100);
+            });
             
             // Restart button
             restartBtn.addEventListener('click', resetGame);
+            restartBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                resetGame();
+            });
             
             // Mode buttons
             document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    gameState.gameMode = btn.dataset.mode;
-                    difficultyLabel.style.display = gameState.gameMode === 'vsAI' ? 'block' : 'none';
-                    document.querySelector('.difficulty-selector').style.display = 
-                        gameState.gameMode === 'vsAI' ? 'flex' : 'none';
+                btn.addEventListener('click', () => updateGameMode(btn.dataset.mode));
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    updateGameMode(btn.dataset.mode);
                 });
             });
             
             // Difficulty buttons
             document.querySelectorAll('.difficulty-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    gameState.difficulty = btn.dataset.difficulty;
+                btn.addEventListener('click', () => updateDifficulty(btn.dataset.difficulty));
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    updateDifficulty(btn.dataset.difficulty);
                 });
             });
         }
 
-        function handleMouseMove(event) {
-            const rect = canvas.getBoundingClientRect();
-            const mouseY = event.clientY - rect.top;
-            
-            if (gameState.gameMode === 'vsAI') {
-                gameState.playerY = mouseY - canvas.height / 2;
-            } else {
-                if (event.clientX < window.innerWidth / 2) {
-                    gameState.playerY = mouseY - canvas.height / 2;
-                } else {
-                    gameState.aiY = mouseY - canvas.height / 2;
-                }
-            }
+        function updateLeftIndicator(y) {
+            leftIndicator.style.top = y + 'px';
         }
 
-        function handleTouchMove(event) {
-            event.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const touch = event.touches[0];
-            const touchY = touch.clientY - rect.top;
+        function updateRightIndicator(y) {
+            rightIndicator.style.top = y + 'px';
+        }
+
+        function updateGameMode(mode) {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
             
-            if (gameState.gameMode === 'vsAI') {
-                gameState.playerY = touchY - canvas.height / 2;
-            } else {
-                if (touch.clientX < window.innerWidth / 2) {
-                    gameState.playerY = touchY - canvas.height / 2;
-                } else {
-                    gameState.aiY = touchY - canvas.height / 2;
-                }
-            }
+            gameState.gameMode = mode;
+            gameModeText.textContent = mode === 'vsAI' ? 'VS AI' : '2 PLAYERS';
+            
+            // Update UI
+            const difficultyLabel = document.querySelector('.difficulty-selector');
+            difficultyLabel.style.display = mode === 'vsAI' ? 'flex' : 'none';
+            
+            // Reset player positions
+            gameState.playerY = 0;
+            gameState.aiY = 0;
+        }
+
+        function updateDifficulty(difficulty) {
+            document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-difficulty="${difficulty}"]`).classList.add('active');
+            gameState.difficulty = difficulty;
         }
 
         function gameLoop() {
@@ -323,24 +612,26 @@
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw background (already done via CSS gradient)
-            
             // Draw paddles
             ctx.fillStyle = 'white';
             
             // Player paddle
-            ctx.save();
-            ctx.translate(30, canvas.height / 2 + gameState.playerY);
-            ctx.scale(1, gameState.playerPaddleScale);
-            ctx.fillRect(-PADDLE_WIDTH/2, -PADDLE_HEIGHT/2, PADDLE_WIDTH, PADDLE_HEIGHT);
-            ctx.restore();
+            const playerPaddleHeight = PADDLE_HEIGHT * gameState.playerPaddleScale;
+            ctx.fillRect(
+                20,
+                canvas.height / 2 + gameState.playerY - playerPaddleHeight / 2,
+                PADDLE_WIDTH,
+                playerPaddleHeight
+            );
             
             // AI paddle
-            ctx.save();
-            ctx.translate(canvas.width - 30, canvas.height / 2 + gameState.aiY);
-            ctx.scale(1, gameState.aiPaddleScale);
-            ctx.fillRect(-PADDLE_WIDTH/2, -PADDLE_HEIGHT/2, PADDLE_WIDTH, PADDLE_HEIGHT);
-            ctx.restore();
+            const aiPaddleHeight = PADDLE_HEIGHT * gameState.aiPaddleScale;
+            ctx.fillRect(
+                canvas.width - 20 - PADDLE_WIDTH,
+                canvas.height / 2 + gameState.aiY - aiPaddleHeight / 2,
+                PADDLE_WIDTH,
+                aiPaddleHeight
+            );
             
             // Draw ball
             if (!gameState.showSpawnCircle) {
@@ -358,9 +649,9 @@
             // Draw spawn circle
             if (gameState.showSpawnCircle) {
                 ctx.beginPath();
-                ctx.arc(canvas.width / 2, canvas.height / 2, 20, 0, Math.PI * 2);
+                ctx.arc(canvas.width / 2, canvas.height / 2, 15 * gameState.spawnCircleScale, 0, Math.PI * 2);
                 ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.stroke();
             }
             
@@ -369,7 +660,7 @@
                 drawStar(
                     canvas.width / 2 + gameState.powerUpPosition.x,
                     canvas.height / 2 + gameState.powerUpPosition.y,
-                    15
+                    12
                 );
             }
             
@@ -379,8 +670,8 @@
             // Show/hide celebration
             if (gameState.showCelebration) {
                 celebrationElement.style.display = 'block';
-                celebrationElement.textContent = 
-                    `🎉 ${gameState.playerScore === WINNING_SCORE ? "Blue" : "Red"} Wins! 🎉`;
+                const winner = gameState.playerScore === WINNING_SCORE ? "BLUE" : "RED";
+                celebrationElement.textContent = `🏆 ${winner} WINS! 🏆`;
             } else {
                 celebrationElement.style.display = 'none';
             }
@@ -411,7 +702,7 @@
             }
             
             ctx.closePath();
-            ctx.fillStyle = 'yellow';
+            ctx.fillStyle = 'gold';
             ctx.fill();
         }
 
@@ -436,7 +727,7 @@
             const canvasWidth = gameState.canvas.width;
             
             // Left paddle collision
-            if (newX < -canvasWidth / 2 + 50) {
+            if (newX < -canvasWidth / 2 + 40) {
                 const paddleCenter = gameState.playerY;
                 const paddleHeight = PADDLE_HEIGHT * gameState.playerPaddleScale;
                 const distance = Math.abs(gameState.ballPosition.y - paddleCenter);
@@ -446,13 +737,13 @@
                     gameState.lastHitterIsPlayer = true;
                     
                     const offset = (gameState.ballPosition.y - paddleCenter) / (paddleHeight / 2);
-                    gameState.ballVelocity.dy += offset * 5;
-                    newX = -canvasWidth / 2 + 50;
+                    gameState.ballVelocity.dy += offset * 4;
+                    newX = -canvasWidth / 2 + 40;
                 }
             }
             
             // Right paddle collision
-            if (newX > canvasWidth / 2 - 50) {
+            if (newX > canvasWidth / 2 - 40) {
                 const paddleCenter = gameState.aiY;
                 const paddleHeight = PADDLE_HEIGHT * gameState.aiPaddleScale;
                 const distance = Math.abs(gameState.ballPosition.y - paddleCenter);
@@ -462,8 +753,8 @@
                     gameState.lastHitterIsPlayer = false;
                     
                     const offset = (gameState.ballPosition.y - paddleCenter) / (paddleHeight / 2);
-                    gameState.ballVelocity.dy += offset * 5;
-                    newX = canvasWidth / 2 - 50;
+                    gameState.ballVelocity.dy += offset * 4;
+                    newX = canvasWidth / 2 - 40;
                 }
             }
             
@@ -493,20 +784,27 @@
                     Math.pow(ballScreenY - powerUpY, 2)
                 );
                 
-                if (distance < (BALL_SIZE + 30) / 2) {
+                if (distance < (BALL_SIZE + 24) / 2) {
                     activatePowerUp();
                     gameState.powerUpPosition = null;
+                    gameState.powerUpActive = true;
+                    
+                    // Show power-up indicator
+                    powerUpIndicator.style.display = 'block';
+                    setTimeout(() => {
+                        powerUpIndicator.style.display = 'none';
+                    }, 1500);
                 }
             }
             
             // Gradually speed up ball
-            const speedIncrease = 0.0005;
+            const speedIncrease = 0.0003;
             const currentSpeed = Math.sqrt(
                 gameState.ballVelocity.dx * gameState.ballVelocity.dx +
                 gameState.ballVelocity.dy * gameState.ballVelocity.dy
             );
             
-            if (currentSpeed < 15) {
+            if (currentSpeed < 12) {
                 const newSpeed = currentSpeed + speedIncrease;
                 const angle = Math.atan2(gameState.ballVelocity.dy, gameState.ballVelocity.dx);
                 gameState.ballVelocity.dx = Math.cos(angle) * newSpeed;
@@ -521,7 +819,7 @@
             let predictedY = gameState.aiY;
             
             if (gameState.ballVelocity.dx > 0) {
-                const timeToReachAI = (canvas.width / 2 - 50 - gameState.ballPosition.x) / gameState.ballVelocity.dx;
+                const timeToReachAI = (canvas.width / 2 - 40 - gameState.ballPosition.x) / gameState.ballVelocity.dx;
                 predictedY = gameState.ballPosition.y + gameState.ballVelocity.dy * timeToReachAI * (1 + predictionFactor);
             }
             
@@ -543,7 +841,7 @@
 
         function spawnBallAnimation() {
             if (gameState.showSpawnCircle) {
-                gameState.spawnCircleScale += 0.04;
+                gameState.spawnCircleScale += 0.03;
                 if (gameState.spawnCircleScale >= 2.0) {
                     gameState.showSpawnCircle = false;
                     gameState.spawnCircleScale = 0.1;
@@ -552,22 +850,29 @@
         }
 
         function checkPowerUpSpawn() {
-            if (gameState.gameOver || gameState.showSpawnCircle) return;
+            if (gameState.gameOver || gameState.showSpawnCircle || gameState.powerUpActive) return;
             
             if (gameState.timeSinceBallSpawn >= 3) {
-                if (Math.random() < 0.5 && Math.floor(Math.random() * 10) === 0) {
-                    gameState.powerUpPosition = { x: 0, y: 0 };
+                if (Math.random() < 0.3 && Math.floor(Math.random() * 10) === 0) {
+                    // Random position for power-up
+                    const maxX = gameState.canvas.width / 2 - 100;
+                    const maxY = gameState.canvas.height / 2 - 100;
+                    gameState.powerUpPosition = {
+                        x: (Math.random() - 0.5) * maxX * 0.5,
+                        y: (Math.random() - 0.5) * maxY * 0.5
+                    };
                 }
             }
         }
 
         function spawnBall() {
             gameState.ballPosition = { x: 0, y: 0 };
-            gameState.ballVelocity = { dx: 3, dy: 3 };
+            gameState.ballVelocity = { dx: 2.5, dy: 2.5 };
             gameState.timeSinceBallSpawn = 0;
             gameState.showSpawnCircle = true;
             gameState.spawnCircleScale = 0.1;
             gameState.powerUpPosition = null;
+            gameState.powerUpActive = false;
         }
 
         function checkGameOver() {
@@ -582,11 +887,13 @@
                 gameState.playerPaddleScale = 1.5;
                 setTimeout(() => {
                     gameState.playerPaddleScale = 1.0;
+                    gameState.powerUpActive = false;
                 }, 5000);
             } else {
                 gameState.aiPaddleScale = 1.5;
                 setTimeout(() => {
                     gameState.aiPaddleScale = 1.0;
+                    gameState.powerUpActive = false;
                 }, 5000);
             }
         }
@@ -597,7 +904,7 @@
             gameState.gameOver = false;
             gameState.showCelebration = false;
             gameState.ballPosition = { x: 0, y: 0 };
-            gameState.ballVelocity = { dx: 3, dy: 3 };
+            gameState.ballVelocity = { dx: 2.5, dy: 2.5 };
             gameState.playerY = 0;
             gameState.aiY = 0;
             gameState.timeSinceBallSpawn = 0;
@@ -607,9 +914,11 @@
             gameState.playerPaddleScale = 1.0;
             gameState.aiPaddleScale = 1.0;
             gameState.lastHitterIsPlayer = true;
+            gameState.powerUpActive = false;
             
             celebrationElement.style.display = 'none';
             restartBtn.style.display = 'none';
+            powerUpIndicator.style.display = 'none';
         }
 
         // Start the game
